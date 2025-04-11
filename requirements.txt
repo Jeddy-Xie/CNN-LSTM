@@ -1,6 +1,6 @@
 python>=3.10
 
-kaggle = 1.5.12
+kaggle == 1.5.12
 
 # Data Analysis Tools
 pandas>=2.2.3
