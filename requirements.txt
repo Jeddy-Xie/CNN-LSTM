@@ -1,7 +1,30 @@
-python = 3.10
+python>=3.10
 
 kaggle = 1.5.12
 
 # Data Analysis Tools
-pandas = 2.2.3
-numpy = 2.2.4
+pandas>=2.2.3
+numpy>=2.2.4
+scipy>=1.12.0
+
+# Deep Learning Tools
+torch>=2.6.0
+torchvision>=0.17.0
+scikit-learn>=1.6.1
+keras>=3.9.2
+tensorflow>=2.15.0
+
+# Data Visualization
+matplotlib>=3.10.1
+seaborn>=0.13.2
+plotly>=5.18.0
+
+# Utilities
+tqdm>=4.66.2
+python-dotenv>=1.0.1
+joblib>=1.4.0
+
+# Data Processing
+yfinance>=0.2.36
+ta>=0.11.0  # Technical Analysis library
+
