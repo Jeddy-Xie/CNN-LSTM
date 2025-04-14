@@ -25,6 +25,20 @@ import matplotlib.pyplot as plt
 
 from bayes_opt import BayesianOptimization
 
+
+# GPU Check for TensorFlow
+tf_gpus = tf.config.list_physical_devices('GPU')
+
+# GPU Check for PyTorch
+torch_gpu = torch.cuda.is_available()
+
+# Exit if no GPU is found
+if not tf_gpus and not torch_gpu:
+    print("❌ No GPU detected. Exiting to avoid running on CPU.")
+    sys.exit(1)
+else:
+    print("✅ GPU is available. Continuing execution.")
+
 project_dir = os.path.dirname(os.path.abspath('__file__'))
 project_dir
 
