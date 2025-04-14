@@ -74,14 +74,13 @@ for h in forecast_horizons:
     
     naive_y_true = y_scaler1.inverse_transform(naive_y_true)
     naive_y_pred = y_scaler1.inverse_transform(naive_y_pred)
-    mse_naive, mae_naive, huber_naive = compute_metrics(naive_y_true, naive_y_pred)
+    mse_naive, mae_naive = compute_metrics(naive_y_true, naive_y_pred)
     
     # Print out the performance for this forecast horizon
     record = {
         'model': 'Naive',
         'mse': mse_naive,
-        'mae': mae_naive,
-        'huber': huber_naive
+        'mae': mae_naive
     }
     append_score(one_step_forecast_scores, record)
 
@@ -189,14 +188,12 @@ cnn_lstm_mse, cnn_lstm_mae, cnn_lstm_huber, cnn_lstm_history = cnn_lstm_model_ev
 record = {
     'model': 'CNN-LSTM',
     'mse': -cnn_lstm_mse,
-    'mae': cnn_lstm_mae,
-    'huber': cnn_lstm_huber
+    'mae': cnn_lstm_mae
 }
 append_score(one_step_forecast_scores, record)
 
 print(f"MSE: {-cnn_lstm_mse}")
 print(f"MAE: {cnn_lstm_mae}")
-print(f"Huber: {cnn_lstm_huber}")
 
 # Save learning curves to output folder
 plot_learning_curves(cnn_lstm_history, output_dir, 'cnn_lstm')

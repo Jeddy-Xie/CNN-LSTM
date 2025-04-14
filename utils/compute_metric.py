@@ -4,8 +4,7 @@ import tensorflow as tf
 def compute_metrics(y_true, y_pred):
     mse = mean_squared_error(y_true, y_pred)
     mae = mean_absolute_error(y_true, y_pred)
-    huber = tf.keras.losses.Huber()(y_true, y_pred).numpy()
-    return mse, mae, huber
+    return mse, mae
 
 
 def append_score(scores, new_score):
@@ -21,5 +20,4 @@ def compute_metrics_seq2seq(y_true, y_pred):
     y_pred_flat = y_pred.reshape(-1)    
     mse = mean_squared_error(y_true_flat, y_pred_flat)
     mae = mean_absolute_error(y_true_flat, y_pred_flat)
-    huber = tf.keras.losses.Huber()(y_true_flat, y_pred_flat).numpy()
-    return mse, mae, huber
+    return mse, mae

@@ -4,6 +4,8 @@ from utils.compute_metric import compute_metrics_seq2seq, compute_metrics
 import tensorflow as tf
 from tensorflow import keras
 import numpy as np
+import math
+
 def cnn_lstm_model_eval(data_frame, feature_cols, target_col, return_index, scaler, filters, window_size, kernel_size, strides, lstm_units, learning_rate, epochs, seq2seq=True, forecast_horizon=1, optimize = True):
     # Use the forecast_horizon 'h' as desired
     h = forecast_horizon
@@ -85,10 +87,10 @@ def cnn_lstm_model_eval(data_frame, feature_cols, target_col, return_index, scal
     y_true_inv = scaler.inverse_transform(y_test.reshape(-1, 1)).reshape(y_test.shape)
     
     if seq2seq:
-        mse, mae, huber = compute_metrics_seq2seq(y_true_inv, y_pred_inv)
+        mse, mae = compute_metrics_seq2seq(y_true_inv, y_pred_inv)
     else:
-        mse, mae, huber = compute_metrics(y_true_inv, y_pred_inv)
+        mse, mae = compute_metrics(y_true_inv, y_pred_inv)
     if optimize:
         return -mse
     else:
-        return np.abs(mse), np.abs(mae), np.abs(huber), history.history
+        return math.abs(mse), math.abs(mae), history.history
