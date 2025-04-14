@@ -33,12 +33,13 @@ tf_gpus = tf.config.list_physical_devices('GPU')
 torch_gpu = torch.cuda.is_available()
 
 # Exit if no GPU is found
+'''
 if not tf_gpus and not torch_gpu:
     print("❌ No GPU detected. Exiting to avoid running on CPU.")
     sys.exit(1)
 else:
     print("✅ GPU is available. Continuing execution.")
-
+'''
 project_dir = os.path.dirname(os.path.abspath('__file__'))
 project_dir
 
@@ -169,7 +170,7 @@ lstm_units = int(best_hyperparameters['params']['lstm_units'])
 learning_rate = best_hyperparameters['params']['learning_rate']
 epochs = int(best_hyperparameters['params']['epochs'])
 
-cnn_lstm_mse, cnn_lstm_mae, cnn_lstm_huber, cnn_lstm_history = cnn_lstm_model_eval(data_frame = data_frame,
+cnn_lstm_mse, cnn_lstm_mae, cnn_lstm_history = cnn_lstm_model_eval(data_frame = data_frame,
                     feature_cols = feature_cols,
                     target_col = target_col,
                     return_index = return_index,
