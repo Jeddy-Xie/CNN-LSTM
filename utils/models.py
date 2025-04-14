@@ -32,6 +32,17 @@ def cnn_lstm_model_eval(data_frame, feature_cols, target_col, return_index, scal
     # Retrieve sequences for training and testing
     X_train, y_train = train_set.X_seq, train_set.y_seq
     X_test, y_test = test_set.X_seq, test_set.y_seq
+
+    # Convert to NumPy if they're PyTorch tensors
+    if hasattr(X_train, "numpy"):
+        X_train = X_train.detach().cpu().numpy()
+    if hasattr(y_train, "numpy"):
+        y_train = y_train.detach().cpu().numpy()
+    if hasattr(X_test, "numpy"):
+        X_test = X_test.detach().cpu().numpy()
+    if hasattr(y_test, "numpy"):
+        y_test = y_test.detach().cpu().numpy()
+
     
     # Clear any previous Keras session to avoid cluttered graphs/models
     keras.backend.clear_session()
