@@ -1,16 +1,16 @@
 # Data Analysis Tools
-pandas>=2.2.3
-numpy>=2.2.4
+pandas
+numpy
 
 # Deep Learning Tools
-torch>=2.6.0
-tensorflow>=2.15.0
-keras>=3.9.2
-scikit-learn>=1.6.1
+torch
+tensorflow>=2.0.0
+keras
+scikit-learn
 
 # Data Visualization
-matplotlib>=3.10.1
+matplotlib
 
 # Utilities
-bayesian-optimization>=1.4.0
+bayesian-optimization
 
