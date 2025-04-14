@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 
 class TimeSeriesDataset(Dataset):
     def __init__(self, dataframe: pd.DataFrame, window_size: int, forecast_horizon: int,
-                 feature_cols: list, target_col: str, return_index: bool = False):
+                 feature_cols: list, target_col: str, return_index: bool = False, seq2seq: bool = False):
         """
         Args:
             dataframe: DataFrame with scaled data.
@@ -15,24 +15,38 @@ class TimeSeriesDataset(Dataset):
             feature_cols: List of feature column names.
             target_col: Name of the target column.
             return_index: If True, return the associated datetime indices.
+            seq2seq: If True, create targets with shape [window_size, forecast_horizon] (sequence-to-sequence),
+                     otherwise targets will have shape [forecast_horizon] (sequence-to-vector).
         """
         self.features = dataframe[feature_cols].values
         self.targets = dataframe[target_col].values
         self.index_array = dataframe.index.values
         self.window_size = window_size
         self.forecast_horizon = forecast_horizon
+        self.seq2seq = seq2seq
         self._create_sequences()
     
     def _create_sequences(self):
         X_seq, y_seq, x_dates, y_dates = [], [], [], []
         num_samples = len(self.features)
+        # Loop over indices where a full sequence + forecast window can be built
         for i in range(num_samples - self.window_size - self.forecast_horizon + 1):
             X_seq.append(self.features[i: i + self.window_size])
-            y_seq.append(self.targets[i + self.window_size : i + self.window_size + self.forecast_horizon])
-            # The last date of the input sequence:
+            
+            if not self.seq2seq:
+                # Sequence-to-vector: target is a single forecast vector
+                y_seq.append(self.targets[i + self.window_size : i + self.window_size + self.forecast_horizon])
+            else:
+                # Sequence-to-sequence: for each time step in the input window, forecast the next forecast_horizon values.
+                seq2seq_y = []
+                for j in range(self.window_size):
+                    seq2seq_y.append(self.targets[i + j: i + j + self.forecast_horizon])
+                y_seq.append(seq2seq_y)
+            
+            # Record the dates (using the last input date and the last forecast date)
             x_dates.append(self.index_array[i + self.window_size - 1])
-            # The last date of the target sequence:
             y_dates.append(self.index_array[i + self.window_size + self.forecast_horizon - 1])
+            
         self.X_seq = torch.tensor(np.array(X_seq), dtype=torch.float32)
         self.y_seq = torch.tensor(np.array(y_seq), dtype=torch.float32)
         self.x_dates = x_dates
@@ -46,6 +60,7 @@ class TimeSeriesDataset(Dataset):
         x_date_str = pd.to_datetime(self.x_dates[idx]).strftime(date_format)
         y_date_str = pd.to_datetime(self.y_dates[idx]).strftime(date_format)
         return self.X_seq[idx], self.y_seq[idx], x_date_str, y_date_str
+
     
 
 def data_load(file_path, x_scaler=None, y_scaler=None):

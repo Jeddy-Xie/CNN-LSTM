@@ -56,6 +56,13 @@ logs/
 .DS_Store
 Thumbs.db
 
+# Output files
+output/
+*.png
+*.jpg
+*.jpeg
+*.gif
+
 # Exceptions - Keep processed data
 !data/processed/
 !data/raw/ 

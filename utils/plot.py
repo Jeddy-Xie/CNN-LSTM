@@ -2,9 +2,9 @@ import plotly.graph_objects as go
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import os
 
-
-def plot_learning_curves(history):
+def plot_learning_curves(history, output_dir, name):
     plt.figure(figsize=(10, 5))
     plt.plot(history['loss'], label='Training Loss', marker='o', color='blue')
     plt.plot(history['val_loss'], label='Validation Loss', marker='o', color='red')
@@ -13,8 +13,11 @@ def plot_learning_curves(history):
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.legend()
-    plt.show()
-
+    # Replace the existing learning_curves.png file if it exists
+    if os.path.exists(os.path.join(output_dir, f'{name}_learning_curves.png')):
+        os.remove(os.path.join(output_dir, f'{name}_learning_curves.png'))
+    plt.savefig(os.path.join(output_dir, f'{name}_learning_curves.png'))
+    plt.close()
 
 def plot_forecast(last_train, true_future, predicted_future, scaler=None, forecast_start_index=None):
     """
