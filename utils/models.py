@@ -5,7 +5,8 @@ import tensorflow as tf
 from tensorflow import keras
 import numpy as np
 
-def cnn_lstm_model_eval(data_frame, feature_cols, target_col, return_index, scaler, filters, window_size, kernel_size, strides, lstm_units, learning_rate, epochs, seq2seq=True, forecast_horizon=1, optimize = True):
+
+def cnn_lstm_model_eval(data_frame, feature_cols, target_col, return_index, scaler, filters, window_size, kernel_size, strides, lstm_units, learning_rate, epochs, seq2seq=True, forecast_horizon=1, optimize = True, results = False):
     # Use the forecast_horizon 'h' as desired
     h = forecast_horizon
     
@@ -85,6 +86,8 @@ def cnn_lstm_model_eval(data_frame, feature_cols, target_col, return_index, scal
     y_pred_inv = scaler.inverse_transform(y_pred.reshape(-1, 1)).reshape(y_pred.shape)
     y_true_inv = scaler.inverse_transform(y_test.reshape(-1, 1)).reshape(y_test.shape)
     
+    if results:
+        return y_pred_inv, y_true_inv
     if seq2seq:
         mse, mae = compute_metrics_seq2seq(y_true_inv, y_pred_inv)
     else:
@@ -92,4 +95,4 @@ def cnn_lstm_model_eval(data_frame, feature_cols, target_col, return_index, scal
     if optimize:
         return -mse
     else:
-        return np.abs(mse), np.abs(mae), history.history    
+        return np.abs(mse), np.abs(mae), history.history, model
