@@ -1,55 +1,67 @@
-from torch.utils.data import Subset
-import torch
-import numpy as np
-from utils.TSDataset import TimeSeriesDataset
+import os
+import pandas as pd
 from torch.utils.data import DataLoader
+from utils.TSDataset import TimeSeriesDataset
 
-def split_train_val_test(dataset, train_frac=0.7):
-    n_total = len(dataset)
-    n_train = int(n_total * train_frac)
-    n_test  = n_total - n_train
-    
-    assert n_total == n_test + n_train
-    train_indices = range(0, n_train)
-    test_indices  = range(n_train, n_total)
-    
-    train_dataset = dataset.iloc[train_indices].sort_index()
-    test_dataset  = dataset.iloc[test_indices].sort_index()
-
-    return train_dataset, test_dataset
-
-
-def create_datasets(train_df, test_df, window_size, forecast_horizon, feature_cols, target_col):
+def train_test_split(df: pd.DataFrame, train_frac: float = 0.7):
     """
-    Creates TimeSeriesDataset objects, their DataLoaders, and converts the sequences to NumPy arrays.
-    
-    Args:
-        train_df, val_df, test_df: DataFrames containing the preprocessed (and scaled) data.
-        window_size: Number of past time steps used as input.
-        forecast_horizon: Number of future steps to forecast.
-        feature_cols: List of feature column names.
-        target_col: Name of the target column.
+    Splits a DataFrame into train and test folds by row-count.
+    """
+    n = len(df)
+    n_train = int(n * train_frac)
+    train_df = df.iloc[:n_train].sort_index()
+    test_df  = df.iloc[n_train:].sort_index()
+    return train_df, test_df
 
+def create_dataloaders(
+    train_df,
+    test_df,
+    window_size: int,
+    forecast_horizon: int,
+    feature_cols: list,
+    target_col: str,
+    batch_size: int = 64,
+    num_workers: int = 4,
+    pin_memory: bool = True,
+    seq2seq: bool = True
+):
+    """
     Returns:
-        A dictionary with dataset objects, DataLoaders, and NumPy arrays:
-          - train_dataset, test_dataset
-          - X_train, y_train, X_test, y_test
+      train_loader, test_loader, train_dataset, test_dataset
     """
-    # Create dataset objects using your custom TimeSeriesDataset class.
-    train_dataset = TimeSeriesDataset(train_df, window_size, forecast_horizon, feature_cols, target_col)
-    test_dataset  = TimeSeriesDataset(test_df, window_size, forecast_horizon, feature_cols, target_col)
-    
-    # Convert datasets to NumPy arrays for training with TensorFlow/Keras.
-    X_train = train_dataset.X_seq.numpy()   # Shape: (n_samples, window_size, n_features)
-    y_train = train_dataset.y_seq.numpy()   # Shape: (n_samples, forecast_horizon)
-    X_test  = test_dataset.X_seq.numpy()
-    y_test  = test_dataset.y_seq.numpy()
-    
-    return {
-        'train_dataset': train_dataset,
-        'test_dataset': test_dataset,
-        'X_train': X_train,
-        'y_train': y_train,
-        'X_test': X_test,
-        'y_test': y_test,
-    }
+    # 1) wrap in your optimized Dataset
+    train_ds = TimeSeriesDataset(
+        dataframe=train_df,
+        window_size=window_size,
+        forecast_horizon=forecast_horizon,
+        feature_cols=feature_cols,
+        target_col=target_col,
+        return_index=False,
+        seq2seq=seq2seq
+    )
+    test_ds = TimeSeriesDataset(
+        dataframe=test_df,
+        window_size=window_size,
+        forecast_horizon=forecast_horizon,
+        feature_cols=feature_cols,
+        target_col=target_col,
+        return_index=False,
+        seq2seq=seq2seq
+    )
+    train_loader = DataLoader(
+        train_ds,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        drop_last=True
+    )
+    test_loader = DataLoader(
+        test_ds,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        drop_last=True
+    )
+    return train_loader, test_loader, train_ds, test_ds
