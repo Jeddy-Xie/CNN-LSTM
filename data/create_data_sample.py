@@ -5,7 +5,7 @@ import os
 original_data = pd.read_csv('data/processed/BTC-USD.csv')
 
 # Take the first 5000 rows
-sample_data = original_data.head(2000)
+sample_data = original_data.head(14400)
 
 # Save to the same location
 # Overwrite the existing file

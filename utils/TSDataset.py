@@ -5,6 +5,7 @@ import numpy as np
 from sklearn.preprocessing import MinMaxScaler, StandardScaler, RobustScaler
 from numpy.lib.stride_tricks import sliding_window_view
 
+'''
 class TimeSeriesDataset(Dataset):
     def __init__(self,
                  dataframe: pd.DataFrame,
@@ -86,8 +87,96 @@ class TimeSeriesDataset(Dataset):
                 self.y_dates[idx],
             )
         return self.X_seq[idx], self.y_seq[idx]
+'''
 
 
+class TimeSeriesDataset(Dataset):
+    """
+    Lazily sliced time-series windows for efficient memory usage.
+
+    Args:
+        dataframe (pd.DataFrame): DataFrame with datetime index.
+        window_size (int): Number of past timesteps.
+        forecast_horizon (int): Number of future steps to predict.
+        feature_cols (list): Columns to use as input features.
+        target_col (str): Column name of the prediction target.
+        return_index (bool): If True, return datetime strings for each sample.
+        seq2seq (bool): If True, targets shape (window_size, forecast_horizon), else (forecast_horizon,).
+        date_format (str): Format string for datetime output.
+    """
+    def __init__(
+        self,
+        npy_path: str,
+        feat_idx: list[int],
+        targ_idx: int,
+        window_size: int,
+        forecast_horizon: int,
+        return_index: bool = False,
+        seq2seq: bool = False,
+        date_format: str = "%Y/%m/%d %H:%M",
+        dates_npy_path: str | None = None,
+    ):
+        """
+        Args:
+            npy_path:        Path to your saved array of shape (T, F+1)
+            feat_idx:        Which columns to use as input features
+            targ_idx:        Which column is the target
+            window_size:     Number of past timesteps
+            forecast_horizon:Number of future steps to predict
+            return_index:    If True, also return date strings
+            seq2seq:         If True, produce (window, horizon) targets
+            date_format:     How to format dates if return_index
+            dates_npy_path:  Optional .npy of T datetime64 values for indexing
+        """
+        # 1) Memory‐map the full array (never brings whole thing into RAM)
+        data = np.load(npy_path, mmap_mode="r")  # shape (T, F+1)
+        self.feats = data[:, feat_idx]           # view of features
+        self.targs = data[:, targ_idx]           # view of target
+        
+        # 2) Optional dates for return_index
+        self.return_index = return_index
+        if return_index:
+            if dates_npy_path is None:
+                raise ValueError("Must pass dates_npy_path if return_index=True")
+            # e.g. an array of dtype='datetime64[ns]' saved earlier
+            self.dates = np.load(dates_npy_path, mmap_mode="r")
+        
+        self.window_size = window_size
+        self.horizon     = forecast_horizon
+        self.seq2seq     = seq2seq
+
+        # 3) Compute how many windows fit
+        total = self.feats.shape[0]
+        self.n_seq = total - window_size - forecast_horizon + 1
+        if self.n_seq < 1:
+            raise ValueError("window + horizon larger than data length")
+
+        self.date_format = date_format
+
+    def __len__(self):
+        return self.n_seq
+
+    def __getitem__(self, idx):
+        # ---- slice inputs ----
+        X_win = self.feats[idx : idx + self.window_size]      # shape (W, F)
+        X = torch.from_numpy(X_win.T.copy())                  # → (F, W)
+
+        # ---- slice targets ----
+        if self.seq2seq:
+            # build (W, H) by stacking H-length slices at each t
+            t_full = self.targs
+            y_list = [t_full[t : t + self.horizon] 
+                    for t in range(idx, idx + self.window_size)]
+            Y = torch.from_numpy(np.stack(y_list, axis=0).astype(np.float32))
+        else:
+            # build (H,) vector just after the window
+            y_vec = self.targs[
+                idx + self.window_size : idx + self.window_size + self.horizon
+            ]
+            Y = torch.from_numpy(y_vec.astype(np.float32))
+
+        return X, Y
+    
 def data_load(file_path, x_scaler=None, y_scaler=None):
     import pandas as pd
     from sklearn.preprocessing import MinMaxScaler, StandardScaler, RobustScaler
