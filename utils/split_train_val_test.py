@@ -16,7 +16,7 @@ def train_test_split(df: pd.DataFrame, train_frac: float = 0.7):
 
 def create_dataloaders(
     df,                        
-    npy_path: str,              # path to full_series.npy
+    npy_path: str,              
     dates_npy_path: str|None,  
     feat_idx: list,
     targ_idx: int,
@@ -28,39 +28,60 @@ def create_dataloaders(
     pin_memory: bool = True,
     seq2seq: bool = True,
 ):
+    """
+    Create train and test dataloaders with proper data splitting.
+    
+    Args:
+        df: DataFrame used only for determining split point
+        npy_path: Path to .npy file containing the full dataset
+        dates_npy_path: Optional path to dates .npy file
+        feat_idx: Indices of feature columns
+        targ_idx: Index of target column
+        window_size: Number of past timesteps
+        forecast_horizon: Number of future steps to predict
+        batch_size: Batch size for dataloaders
+        num_workers: Number of worker processes
+        persistent_workers: Whether to keep workers alive between epochs
+        pin_memory: Whether to pin memory for faster GPU transfer
+        seq2seq: Whether to use sequence-to-sequence format
+    """
+    # Split data into train and test
     train_df, test_df = train_test_split(df, train_frac=0.7)
     n_train_rows = len(train_df)
-    n_test_rows  = len(test_df)
-
-    total_rows = np.load(npy_path, mmap_mode="r").shape[0]
-    max_start = total_rows - window_size - forecast_horizon + 1
-
-    train_max_start = max(0, n_train_rows - window_size - forecast_horizon + 1)
-    train_max_start = min(train_max_start, max_start)
     
-    train_range = (0, train_max_start)
-    test_range  = (train_max_start, max_start)
-
+    # Load total number of rows from npy file
+    total_rows = np.load(npy_path, mmap_mode="r").shape[0]
+    
+    # Create train dataset (first 70% of data)
     train_ds = TimeSeriesDataset(
         npy_path=npy_path,
         feat_idx=feat_idx,
         targ_idx=targ_idx,
         window_size=window_size,
         forecast_horizon=forecast_horizon,
-        seq2seq=seq2seq
+        seq2seq=seq2seq,
+        dates_npy_path=dates_npy_path,
+        start_idx=0,
+        end_idx=n_train_rows
     )
+    
+    # Create test dataset (last 30% of data)
     test_ds = TimeSeriesDataset(
         npy_path=npy_path,
         feat_idx=feat_idx,
         targ_idx=targ_idx,
         window_size=window_size,
         forecast_horizon=forecast_horizon,
-        seq2seq=seq2seq
+        seq2seq=seq2seq,
+        dates_npy_path=dates_npy_path,
+        start_idx=n_train_rows,
+        end_idx=total_rows
     )
 
     # Only use persistent_workers if num_workers > 0
     persistent_workers = persistent_workers and num_workers > 0
 
+    # Create dataloaders
     train_loader = DataLoader(
         train_ds,
         batch_size=batch_size,
@@ -70,6 +91,7 @@ def create_dataloaders(
         persistent_workers=persistent_workers,
         drop_last=False
     )
+    
     test_loader = DataLoader(
         test_ds,
         batch_size=batch_size,

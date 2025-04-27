@@ -46,7 +46,7 @@ def cnn_lstm_model_eval(
     # Device + AMP setup
     use_cuda = torch.cuda.is_available()
     device   = torch.device("cuda" if use_cuda else "cpu")
-    scaler   = GradScaler(enabled=use_cuda)
+    scaler   = torch.amp.GradScaler(enabled=use_cuda)
     amp_args = dict(device_type='cuda', enabled=use_cuda)
 
     # 1) DataLoaders

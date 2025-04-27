@@ -115,6 +115,8 @@ class TimeSeriesDataset(Dataset):
         seq2seq: bool = False,
         date_format: str = "%Y/%m/%d %H:%M",
         dates_npy_path: str | None = None,
+        start_idx: int = 0,
+        end_idx: int = None
     ):
         """
         Args:
@@ -127,11 +129,17 @@ class TimeSeriesDataset(Dataset):
             seq2seq:         If True, produce (window, horizon) targets
             date_format:     How to format dates if return_index
             dates_npy_path:  Optional .npy of T datetime64 values for indexing
+            start_idx:       Starting index for this dataset
+            end_idx:         Ending index for this dataset
         """
         # 1) Memory‐map the full array (never brings whole thing into RAM)
         data = np.load(npy_path, mmap_mode="r")  # shape (T, F+1)
-        self.feats = data[:, feat_idx]           # view of features
-        self.targs = data[:, targ_idx]           # view of target
+        
+        # Slice data according to start and end indices
+        if end_idx is None:
+            end_idx = len(data)
+        self.feats = data[start_idx:end_idx, feat_idx]  # view of features
+        self.targs = data[start_idx:end_idx, targ_idx]  # view of target
         
         # 2) Optional dates for return_index
         self.return_index = return_index
@@ -139,11 +147,11 @@ class TimeSeriesDataset(Dataset):
             if dates_npy_path is None:
                 raise ValueError("Must pass dates_npy_path if return_index=True")
             # e.g. an array of dtype='datetime64[ns]' saved earlier
-            self.dates = np.load(dates_npy_path, mmap_mode="r")
+            self.dates = np.load(dates_npy_path, mmap_mode="r")[start_idx:end_idx]
         
         self.window_size = window_size
-        self.horizon     = forecast_horizon
-        self.seq2seq     = seq2seq
+        self.horizon = forecast_horizon
+        self.seq2seq = seq2seq
 
         # 3) Compute how many windows fit
         total = self.feats.shape[0]
